@@ -29,31 +29,48 @@ Tool schemas are in `cycling-copilot-tools.json`. Every tool call maps to exactl
 All scripts use **uv** with inline PEP 723 dependencies (no requirements.txt). Run locally or on HF Jobs.
 
 ```bash
-# Validate dataset before training
-uv run validate_functiongemma_dataset.py --dataset USER/DATASET --tools cycling-copilot-tools.json
+# Validate dataset before training (local CSV)
+uv run validate_functiongemma_dataset.py --dataset cycling-copilot-dataset-merged.csv --tools cycling-copilot-tools.json
 
-# Train (locally or via HF Jobs with --flavor t4-small)
-uv run train_functiongemma.py --dataset USER/DATASET --tools cycling-copilot-tools.json --output-repo USER/MODEL --epochs 3
+# Train on HF Jobs (production - uses dataset from HF Hub)
+hf jobs run --flavor t4-small --timeout 1h \
+  --secrets HF_TOKEN=$HF_TOKEN \
+  -- uv run train_functiongemma.py \
+    --dataset monday8am/cycling-copilot \
+    --tools cycling-copilot-tools.json \
+    --output-repo monday8am/cycling-copilot-functiongemma \
+    --epochs 3
 
-# Quick test run (fewer examples, 1 epoch)
-uv run train_functiongemma.py --dataset USER/DATASET --tools cycling-copilot-tools.json --output-repo USER/MODEL-test --epochs 1 --max-examples 50
+# Quick test run (50 examples, 1 epoch)
+hf jobs run --flavor t4-small --timeout 30m \
+  --secrets HF_TOKEN=$HF_TOKEN \
+  -- uv run train_functiongemma.py \
+    --dataset monday8am/cycling-copilot \
+    --tools cycling-copilot-tools.json \
+    --output-repo monday8am/cycling-copilot-functiongemma-test \
+    --epochs 1 --max-examples 50
 
 # Evaluate
-uv run evaluate_functiongemma.py --model USER/MODEL --dataset USER/DATASET --tools cycling-copilot-tools.json
+uv run evaluate_functiongemma.py \
+  --model monday8am/cycling-copilot-functiongemma \
+  --dataset monday8am/cycling-copilot \
+  --tools cycling-copilot-tools.json
 
 # Export to LiteRT-LM for Android
-uv run export_litertlm.py --model USER/MODEL --output-repo USER/MODEL-litertlm
+hf jobs run --flavor t4-small --timeout 30m \
+  --secrets HF_TOKEN=$HF_TOKEN \
+  -- uv run export_litertlm.py \
+    --model monday8am/cycling-copilot-functiongemma \
+    --output-repo monday8am/cycling-copilot-functiongemma-litertlm
 
 # Generate training data (HF Inference API)
 uv run generate_dataset.py
 
 # Generate training data (local Ollama)
 uv run generate_dataset-local-ollama.py
-```
 
-For GPU training on HF Jobs, prefix with:
-```bash
-hf jobs run --flavor t4-small --timeout 1h --secrets HF_TOKEN=$HF_TOKEN -- uv run ...
+# Merge and validate datasets
+python3 merge_and_validate.py
 ```
 
 ## Key Files
@@ -71,7 +88,16 @@ hf jobs run --flavor t4-small --timeout 1h --secrets HF_TOKEN=$HF_TOKEN -- uv ru
 | `dataset-expansion-prompt.md` | Prompt template for generating training data variations |
 | `SKILL.md` | Full FunctionGemma trainer skill documentation |
 
-## Dataset Format
+## Dataset
+
+**HF Hub**: https://huggingface.co/datasets/monday8am/cycling-copilot
+
+The production dataset `cycling-copilot-dataset-merged.csv` contains:
+- **942 validated examples** (all 6 tools covered)
+- **Tool distribution**: get_ride_status (253), get_route_alternatives (185), find_nearby_poi (176), get_segment_ahead (171), get_weather_forecast (126), get_rider_profile (31)
+- **Variations**: Spanish, voice-style commands, conversational, indirect intent, standard natural language
+
+### Dataset Format
 
 CSV with two columns: `user_message` and `tool_calls`. Every row maps to exactly ONE tool call.
 
@@ -79,8 +105,6 @@ CSV with two columns: `user_message` and `tool_calls`. Every row maps to exactly
 user_message,tool_calls
 "Where can I get water?","[{""name"": ""find_nearby_poi"", ""args"": {""query"": ""water""}}]"
 ```
-
-Target: 400-500 examples, minimum 30 per tool. Five variation types: standard (40%), voice-style (15%), indirect intent (15%), Spanish (15%), conversational (15%).
 
 ## FunctionGemma Prompt Format
 
@@ -99,7 +123,79 @@ TOOL_CALLS_JSON
 <end_of_turn>
 ```
 
+## Making the SKILL Available in Claude Code
+
+The `SKILL.md` file defines a Claude Code skill for training FunctionGemma. To make it available to Claude Code users:
+
+### Option 1: HuggingFace Skills Collection (Recommended)
+
+1. **Create a HuggingFace Space or Model repo** with the skill files:
+   - Navigate to https://huggingface.co/new-space or https://huggingface.co/new
+   - Choose "Skills" or "Model" type
+   - Upload `SKILL.md` and all referenced scripts
+
+2. **Structure for HF Skills**:
+   ```
+   monday8am/functiongemma-trainer/
+   ├── README.md                   # Overview and usage
+   ├── SKILL.md                    # Skill metadata (frontmatter + docs)
+   ├── train_functiongemma.py
+   ├── evaluate_functiongemma.py
+   ├── validate_functiongemma_dataset.py
+   ├── export_litertlm.py
+   ├── generate_dataset.py
+   ├── generate_dataset-local-ollama.py
+   └── cycling-copilot-tools.json
+   ```
+
+3. **Users can install via Claude Code Settings**:
+   - In Claude Code, go to Skills settings
+   - Add skill from HuggingFace: `monday8am/functiongemma-trainer`
+   - Or add via command: `/skill add monday8am/functiongemma-trainer`
+
+### Option 2: Local Skill Installation
+
+Users can install directly from the GitHub repository:
+
+```bash
+# In Claude Code
+/skill add https://github.com/monday8am/riding-copilot-files
+```
+
+Or manually copy to Claude Code skills directory:
+```bash
+# Clone the repo
+git clone https://github.com/monday8am/riding-copilot-files.git
+
+# Copy to Claude Code skills directory
+cp -r riding-copilot-files ~/.claude/skills/functiongemma-trainer
+```
+
+### Skill Invocation
+
+Once installed, users invoke the skill in Claude Code:
+```
+/functiongemma-trainer <args>
+```
+
+The skill name is defined in the `SKILL.md` frontmatter:
+```yaml
+---
+name: functiongemma-trainer
+description: Fine-tune FunctionGemma for on-device function calling using SFT on Hugging Face Jobs...
+---
+```
+
+Refer to `SKILL.md` for complete documentation on skill usage and parameters.
+
 ## Environment Variables
 
 - `HF_TOKEN` — Hugging Face token (required for training/evaluation on Hub)
 - `OLLAMA_REMOTE_HOST` — Ollama server IP for local dataset generation (default: `192.168.0.33`)
+
+## Repository Structure
+
+- **GitHub**: https://github.com/monday8am/riding-copilot-files
+- **HF Dataset**: https://huggingface.co/datasets/monday8am/cycling-copilot
+- **Expected model output**: `monday8am/cycling-copilot-functiongemma`
+- **Expected LiteRT-LM output**: `monday8am/cycling-copilot-functiongemma-litertlm`
