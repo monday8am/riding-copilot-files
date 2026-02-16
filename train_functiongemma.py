@@ -143,7 +143,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        torch_dtype=torch.float32,
         device_map="auto",
     )
 
@@ -186,6 +186,7 @@ def main():
         eval_strategy="epoch" if eval_dataset else "no",
         max_length=args.max_length,
         gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         push_to_hub=True,
         hub_model_id=args.output_repo,
         hub_token=hf_token,
