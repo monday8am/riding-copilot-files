@@ -153,6 +153,11 @@ def main():
 
         if predicted is None:
             results["parse_failures"] += 1
+            if results["parse_failures"] <= 5:
+                print(f"  PARSE FAIL #{results['parse_failures']}:")
+                print(f"    Input: {row['user_message'][:80]}")
+                print(f"    Expected: {row['tool_calls'][:80]}")
+                print(f"    Generated: {repr(generated[:200])}")
             continue
 
         # Check tool name

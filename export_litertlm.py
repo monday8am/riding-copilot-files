@@ -29,10 +29,11 @@ Reference:
 
 import argparse
 import os
+import shutil
 from pathlib import Path
 
 import torch
-from huggingface_hub import login, HfApi, upload_folder
+from huggingface_hub import login, HfApi, upload_folder, hf_hub_download
 from peft import PeftModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -110,6 +111,15 @@ def step1_merge_lora(model_repo: str, output_dir: Path) -> Path:
 
     model.save_pretrained(merged_dir)
     tokenizer.save_pretrained(merged_dir)
+
+    # Ensure tokenizer.model (SentencePiece) exists — needed for LiteRT-LM
+    tokenizer_model_path = merged_dir / "tokenizer.model"
+    if not tokenizer_model_path.exists():
+        print("  tokenizer.model missing, downloading from base model...")
+        src = hf_hub_download(BASE_MODEL, "tokenizer.model")
+        shutil.copy(src, tokenizer_model_path)
+        print(f"  Copied tokenizer.model from {BASE_MODEL}")
+
     print(f"  Checkpoint saved to {merged_dir}")
     return merged_dir
 
