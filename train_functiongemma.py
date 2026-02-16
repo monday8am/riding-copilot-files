@@ -168,9 +168,12 @@ def main():
     if args.trackio_project:
         try:
             import trackio
-            trackio.init(project=args.trackio_project)
+            trackio.init(
+                project=args.trackio_project,
+                space_id="monday8am/trackio",
+            )
             training_args.report_to = "trackio"
-            print(f"Trackio enabled: {args.trackio_project}")
+            print(f"Trackio enabled: {args.trackio_project} → https://huggingface.co/spaces/monday8am/trackio")
         except ImportError:
             print("Trackio not available, skipping monitoring")
 
@@ -185,6 +188,14 @@ def main():
 
     print("Starting training...")
     trainer.train()
+
+    # Finish Trackio run
+    if args.trackio_project:
+        try:
+            import trackio
+            trackio.finish()
+        except Exception:
+            pass
 
     # Save and push
     print(f"Pushing model to {args.output_repo}...")
