@@ -307,7 +307,7 @@ hf jobs run --flavor t4-small --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
   -- uv run export_litertlm.py \
     --model monday8am/cycling-copilot-functiongemma \
-    --output-repo monday8am/cycling-copilot-functiongemma-litertlm \
+    --output-repo monday8am/cycling-copilot-functiongemma \
     --output-name-prefix cycling-copilot
 ```
 

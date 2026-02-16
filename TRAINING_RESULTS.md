@@ -95,7 +95,7 @@ Changed training parameters:
 - **Size**: 284 MB (dynamic int8 quantization)
 - **KV Cache**: 1024 tokens
 - **Prefill Length**: 256 tokens
-- **HF Hub**: https://huggingface.co/monday8am/cycling-copilot-functiongemma-litertlm
+- **Download**: https://huggingface.co/monday8am/cycling-copilot-functiongemma/resolve/main/cycling-copilot_q8_ekv1024.litertlm
 
 ### Export Configuration
 ```python
@@ -228,7 +228,7 @@ hf jobs uv run \
   export_litertlm.py \
   -- \
     --model monday8am/cycling-copilot-functiongemma \
-    --output-repo monday8am/cycling-copilot-functiongemma-litertlm
+    --output-repo monday8am/cycling-copilot-functiongemma
 ```
 
 ---

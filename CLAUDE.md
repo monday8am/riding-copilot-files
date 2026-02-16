@@ -61,7 +61,7 @@ hf jobs run --flavor t4-small --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
   -- uv run export_litertlm.py \
     --model monday8am/cycling-copilot-functiongemma \
-    --output-repo monday8am/cycling-copilot-functiongemma-litertlm
+    --output-repo monday8am/cycling-copilot-functiongemma
 
 # Generate training data (HF Inference API)
 uv run generate_dataset.py
@@ -144,8 +144,9 @@ TOOL_CALLS_JSON
 | get_rider_profile | 58.1% | 31 |
 | get_route_alternatives | 54.1% | 185 |
 
-**LiteRT-LM Export**: https://huggingface.co/monday8am/cycling-copilot-functiongemma-litertlm
+**LiteRT-LM Export**: Available in the same repo
 - File: `cycling-copilot_q8_ekv1024.litertlm` (284 MB)
+- Download: https://huggingface.co/monday8am/cycling-copilot-functiongemma/resolve/main/cycling-copilot_q8_ekv1024.litertlm
 - Ready for Android deployment
 
 ### Critical Fix: Prompt Truncation
@@ -229,5 +230,4 @@ Refer to `SKILL.md` for complete documentation on skill usage and parameters.
 
 - **GitHub**: https://github.com/monday8am/riding-copilot-files
 - **HF Dataset**: https://huggingface.co/datasets/monday8am/cycling-copilot
-- **Expected model output**: `monday8am/cycling-copilot-functiongemma`
-- **Expected LiteRT-LM output**: `monday8am/cycling-copilot-functiongemma-litertlm`
+- **Model output**: `monday8am/cycling-copilot-functiongemma` (includes both LoRA adapter and .litertlm export)
