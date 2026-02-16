@@ -9,7 +9,7 @@ Fine-tune Google's FunctionGemma (270M) for custom on-device function calling. T
 
 ## Overview
 
-FunctionGemma is a 270M parameter model built on Gemma 3, fine-tuned for function calling. It achieves 58% accuracy zero-shot and 85% after fine-tuning on domain-specific tools. This skill automates the fine-tuning process for your custom tool schemas.
+FunctionGemma is a 270M parameter model built on Gemma 3, fine-tuned for function calling. It achieves 58% accuracy zero-shot and 70-85% after fine-tuning on domain-specific tools (depending on data quality and training epochs). This skill automates the fine-tuning process for your custom tool schemas.
 
 **Key facts:**
 - Base model: `google/functiongemma-270m-it`
@@ -17,6 +17,21 @@ FunctionGemma is a 270M parameter model built on Gemma 3, fine-tuned for functio
 - Latency: 0.3s time-to-first-token on Samsung S25 Ultra
 - Fine-tuning is NOT optional — 58% base accuracy is not production-ready
 - Export format: LiteRT-LM (`.litertlm`) for Android, not GGUF
+
+## Real-World Results
+
+**Cycling Copilot** (February 2026):
+- Dataset: 942 examples across 6 tools
+- Training: 3 epochs, ~21 min on t4-small (~$0.14)
+- Results: **70.1% combined accuracy** (tool + arguments)
+  - Tool selection: 78.1%
+  - Argument accuracy: 71.1%
+  - Best tool: get_segment_ahead (83.0%)
+  - Weakest tool: get_route_alternatives (54.1%)
+- Export: 284 MB `.litertlm` file ready for Android
+- Model: https://huggingface.co/monday8am/cycling-copilot-functiongemma
+
+**Key lesson**: Initial training with `max_length=512` caused 0% eval accuracy due to prompt truncation. FunctionGemma tool schemas can be ~825 tokens, requiring `max_length=1280+`.
 
 ## Prerequisites
 
@@ -131,7 +146,9 @@ hf jobs run \
     --output-repo USERNAME/MODEL_NAME \
     --epochs 3 \
     --lr 2e-4 \
-    --batch-size 2
+    --batch-size 1 \
+    --gradient-accumulation-steps 8 \
+    --max-length 1280
 ```
 
 ### Training Parameters
@@ -143,12 +160,31 @@ hf jobs run \
 | `--output-repo` | required | HF repo for the fine-tuned model |
 | `--epochs` | 3 | Number of training epochs |
 | `--lr` | 2e-4 | Learning rate |
-| `--batch-size` | 2 | Training batch size |
-| `--max-length` | 512 | Max sequence length (512 is enough for function calling) |
+| `--batch-size` | 1 | Training batch size (use 1 with longer sequences) |
+| `--gradient-accumulation-steps` | 8 | Gradient accumulation steps (effective batch size = batch-size × this) |
+| `--max-length` | 1280 | Max sequence length (**CRITICAL**: must be >925 tokens for FunctionGemma with tool schemas) |
 | `--lora-r` | 16 | LoRA rank |
 | `--lora-alpha` | 32 | LoRA alpha |
 | `--test-split` | 0.1 | Fraction of data for evaluation |
 | `--trackio-project` | none | Optional Trackio project name for monitoring |
+
+### ⚠️ Critical Parameter: max-length
+
+**The `--max-length` parameter is CRITICAL for FunctionGemma training.** If set too low, it will catastrophically truncate training examples, causing fake high training accuracy but 0% evaluation accuracy.
+
+For the cycling copilot tool schemas:
+- Tool schemas JSON: ~825 tokens
+- System prompt: ~50 tokens
+- User message: ~20 tokens
+- Model response: ~30 tokens
+- **Total prompt length: ~925+ tokens**
+
+**Never use `--max-length=512` with FunctionGemma.** Always use at least 1280 tokens.
+
+Symptoms of incorrect max_length:
+- Training shows 100% accuracy but evaluation shows 0%
+- Model generates natural language instead of tool calls
+- All training examples are truncated before the tool call response
 
 ### Quick Test Run
 
@@ -279,9 +315,11 @@ hf jobs run --flavor t4-small --timeout 30m \
 
 **"Model not found" error**: Make sure you accepted the FunctionGemma license at https://huggingface.co/google/functiongemma-270m-it
 
-**Low accuracy after training**: Check that your dataset has enough examples per tool (minimum 30-40 each). Verify tool descriptions are clear and non-overlapping. Try increasing epochs to 5.
+**High training accuracy but 0% eval accuracy**: This is almost always caused by `max_length` being too small. If your tool schemas are ~825 tokens and you use `max_length=512`, all training examples are truncated before the model response. The model learns the system prompt but never sees tool calls. **Solution**: Use `--max-length=1280` (or higher).
 
-**Out of memory**: Unlikely with 270M params on T4, but reduce batch size to 4 if it happens.
+**Low accuracy after training (but eval is working)**: Check that your dataset has enough examples per tool (minimum 30-40 each). Verify tool descriptions are clear and non-overlapping. Try increasing epochs to 5-10 or adding more training data.
+
+**Out of memory**: With `max_length=1280`, you may need `--batch-size=1` on t4-small. Use `--gradient-accumulation-steps=8` to maintain effective batch size.
 
 **LiteRT-LM export fails**: Ensure `ai-edge-torch-nightly` and `ai-edge-litert-nightly` are installed. Check that `tokenizer.model` exists in the checkpoint directory. The conversion requires a GPU runtime.
 
