@@ -19,6 +19,7 @@ Reports tool selection accuracy, argument accuracy, and per-tool breakdown.
 import argparse
 import json
 import os
+import urllib.request
 import torch
 from datasets import load_dataset
 from peft import AutoPeftModelForCausalLM
@@ -30,7 +31,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate FunctionGemma")
     parser.add_argument("--model", required=True, help="HF model repo")
     parser.add_argument("--dataset", required=True, help="HF dataset repo")
-    parser.add_argument("--tools", required=True, help="Path to tool schemas JSON")
+    parser.add_argument("--tools", default=None, help="Local path to tool schemas JSON")
+    parser.add_argument("--tools-url", default=None, help="URL to tool schemas JSON (for HF Jobs)")
     parser.add_argument("--split", default="test")
     parser.add_argument("--max-examples", type=int, default=None)
     return parser.parse_args()
@@ -77,8 +79,15 @@ def main():
         login(token=hf_token)
 
     # Load tools
-    with open(args.tools) as f:
-        tools = json.load(f)
+    if args.tools:
+        with open(args.tools) as f:
+            tools = json.load(f)
+    elif args.tools_url:
+        print(f"Fetching tool schemas from {args.tools_url}...")
+        with urllib.request.urlopen(args.tools_url) as resp:
+            tools = json.loads(resp.read().decode())
+    else:
+        raise ValueError("Either --tools (local path) or --tools-url (URL) is required")
     tools_json = json.dumps(tools, indent=2)
 
     # Load dataset
