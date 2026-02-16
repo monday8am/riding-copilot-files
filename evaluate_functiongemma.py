@@ -96,21 +96,25 @@ def main():
         ds = ds.select(range(min(args.max_examples, len(ds))))
 
     # Load model (supports both LoRA adapters and full models)
+    # Always use the base model tokenizer to avoid embedding resize issues
+    # when loading LoRA adapters (fine-tuned tokenizer may have different vocab size)
+    BASE_MODEL = "google/functiongemma-270m-it"
     print(f"Loading model {args.model}...")
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
     try:
         model = AutoPeftModelForCausalLM.from_pretrained(
             args.model,
             torch_dtype=torch.float32,
             device_map="auto",
         )
-        print("  Loaded as PEFT/LoRA model")
+        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
+        print(f"  Loaded as PEFT/LoRA model (tokenizer from {BASE_MODEL})")
     except Exception:
         model = AutoModelForCausalLM.from_pretrained(
             args.model,
             torch_dtype=torch.float32,
             device_map="auto",
         )
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
         print("  Loaded as full model")
     model.eval()
 
