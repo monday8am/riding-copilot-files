@@ -22,7 +22,7 @@ import os
 import urllib.request
 import torch
 from datasets import load_dataset
-from peft import AutoPeftModelForCausalLM
+from peft import PeftModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from huggingface_hub import login
 
@@ -96,25 +96,27 @@ def main():
         ds = ds.select(range(min(args.max_examples, len(ds))))
 
     # Load model (supports both LoRA adapters and full models)
-    # Always use the base model tokenizer to avoid embedding resize issues
-    # when loading LoRA adapters (fine-tuned tokenizer may have different vocab size)
     BASE_MODEL = "google/functiongemma-270m-it"
     print(f"Loading model {args.model}...")
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     try:
-        model = AutoPeftModelForCausalLM.from_pretrained(
-            args.model,
+        # Load base model first, then apply LoRA adapter manually
+        # This avoids AutoPeftModelForCausalLM's embedding resize which
+        # corrupts the embedding matrix with random values
+        base_model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL,
             torch_dtype=torch.float32,
             device_map="auto",
         )
-        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-        print(f"  Loaded as PEFT/LoRA model (tokenizer from {BASE_MODEL})")
+        model = PeftModel.from_pretrained(base_model, args.model)
+        model = model.merge_and_unload()
+        print("  Loaded as PEFT/LoRA model (merged into base)")
     except Exception:
         model = AutoModelForCausalLM.from_pretrained(
             args.model,
             torch_dtype=torch.float32,
             device_map="auto",
         )
-        tokenizer = AutoTokenizer.from_pretrained(args.model)
         print("  Loaded as full model")
     model.eval()
 
