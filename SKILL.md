@@ -244,16 +244,28 @@ Convert the fine-tuned model to `.litertlm` for Android deployment. This uses Go
 
 The conversion writes a FunctionGemma-specific metadata textproto that configures stop tokens (`<end_of_turn>` and `<start_function_response>`) and model type (`function_gemma`).
 
+**By default, the `.litertlm` file is uploaded to the same repo as the model** (consolidated structure). You can optionally specify a different `--output-repo` if needed.
+
 **Important**: This requires `ai-edge-torch-nightly` and `ai-edge-litert-nightly`. The checkpoint directory must contain a `tokenizer.model` file (SentencePiece format).
 
 ```bash
+# Export to same repo (recommended - consolidated structure)
 hf jobs run \
   --flavor t4-small \
   --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
   -- uv run export_litertlm.py \
     --model USERNAME/MODEL_NAME \
-    --output-repo USERNAME/MODEL_NAME-litertlm \
+    --output-name-prefix cycling-copilot
+
+# Or export to different repo (optional)
+hf jobs run \
+  --flavor t4-small \
+  --timeout 30m \
+  --secrets HF_TOKEN=$HF_TOKEN \
+  -- uv run export_litertlm.py \
+    --model USERNAME/MODEL_NAME \
+    --output-repo USERNAME/EXPORT_REPO \
     --output-name-prefix cycling-copilot
 ```
 
@@ -264,7 +276,7 @@ The exported model can be loaded with the LiteRT-LM Android SDK or deployed via 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `--model` | required | HF repo of the fine-tuned model |
-| `--output-repo` | required | HF repo for the LiteRT-LM export |
+| `--output-repo` | same as --model | HF repo for LiteRT-LM export (default: same repo as model) |
 | `--output-name-prefix` | cycling-copilot | Prefix for output files |
 | `--prefill-seq-len` | 256 | Prefill sequence length |
 | `--kv-cache-max-len` | 1024 | KV cache max length (context window) |
@@ -307,7 +319,6 @@ hf jobs run --flavor t4-small --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
   -- uv run export_litertlm.py \
     --model monday8am/cycling-copilot-functiongemma \
-    --output-repo monday8am/cycling-copilot-functiongemma \
     --output-name-prefix cycling-copilot
 ```
 

@@ -20,7 +20,14 @@ Pipeline (matches the official gemma-cookbook notebook):
   2. Write FunctionGemma metadata textproto
   3. Build PyTorch model via gemma3.build_model_270m()
   4. Convert to .litertlm via converter.convert_to_litert() (single call)
-  5. Upload to HF Hub
+  5. Upload to HF Hub (by default, to the same repo as the model)
+
+Usage:
+  # Export to same repo as model (recommended - consolidated structure)
+  python export_litertlm.py --model USER/MODEL
+
+  # Export to different repo (optional)
+  python export_litertlm.py --model USER/MODEL --output-repo USER/EXPORT_REPO
 
 Reference:
   google-gemini/gemma-cookbook/FunctionGemma/
@@ -70,8 +77,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Export FunctionGemma to LiteRT-LM")
     parser.add_argument("--model", required=True,
                         help="HF repo of fine-tuned model (or local path)")
-    parser.add_argument("--output-repo", required=True,
-                        help="HF repo for LiteRT-LM export")
+    parser.add_argument("--output-repo", required=False, default=None,
+                        help="HF repo for LiteRT-LM export (default: same as --model)")
     parser.add_argument("--output-name-prefix", default="cycling-copilot",
                         help="Prefix for output files (default: cycling-copilot)")
     parser.add_argument("--prefill-seq-len", type=int, default=256,
@@ -227,6 +234,9 @@ def main():
     if hf_token:
         login(token=hf_token)
 
+    # Default output repo to same as input model (consolidated structure)
+    output_repo = args.output_repo or args.model
+
     output_dir = Path("/tmp/litertlm-export")
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -240,13 +250,15 @@ def main():
         kv_cache_max_len=args.kv_cache_max_len,
         quantize=args.quantize,
     )
-    step3_upload(output_dir, args.output_repo, hf_token)
+    step3_upload(output_dir, output_repo, hf_token)
 
     print("\n" + "=" * 60)
     print("EXPORT COMPLETE")
     print(f"  Model:  {args.model}")
     print(f"  Output: {litertlm_path.name}")
-    print(f"  Hub:    https://huggingface.co/{args.output_repo}")
+    print(f"  Hub:    https://huggingface.co/{output_repo}")
+    if output_repo == args.model:
+        print(f"  Note:   LiteRT-LM file added to same repo as model")
     print("=" * 60)
 
 

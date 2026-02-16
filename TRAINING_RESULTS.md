@@ -227,8 +227,7 @@ hf jobs uv run \
   --secrets HF_TOKEN=$HF_TOKEN \
   export_litertlm.py \
   -- \
-    --model monday8am/cycling-copilot-functiongemma \
-    --output-repo monday8am/cycling-copilot-functiongemma
+    --model monday8am/cycling-copilot-functiongemma
 ```
 
 ---

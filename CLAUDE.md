@@ -56,12 +56,11 @@ uv run evaluate_functiongemma.py \
   --dataset monday8am/cycling-copilot \
   --tools cycling-copilot-tools.json
 
-# Export to LiteRT-LM for Android
+# Export to LiteRT-LM for Android (adds .litertlm to same repo)
 hf jobs run --flavor t4-small --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
   -- uv run export_litertlm.py \
-    --model monday8am/cycling-copilot-functiongemma \
-    --output-repo monday8am/cycling-copilot-functiongemma
+    --model monday8am/cycling-copilot-functiongemma
 
 # Generate training data (HF Inference API)
 uv run generate_dataset.py
