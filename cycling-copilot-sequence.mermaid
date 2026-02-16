@@ -1,0 +1,64 @@
+sequenceDiagram
+    participant U as 🎤 Cyclist
+    participant FG as 📱 FunctionGemma<br/>270M Router
+    participant TE as ⚙️ Tool Engine<br/>Kotlin
+    participant G1B as 📱 Gemma 3 1B<br/>Local Reasoner
+    participant API as ☁️ Routing API
+    participant REM as ☁️ Remote LLM
+
+    Note over U,REM: Scenario A — Local-only (offline or no reroute needed)
+
+    U->>FG: "I'm getting tired, what's ahead?"
+    activate FG
+    FG-->>TE: get_ride_status() + get_segment_ahead() + get_rider_profile()
+    deactivate FG
+
+    activate TE
+    Note right of TE: Parallel execution<br/>All tools local
+    TE-->>TE: Compute ride metrics from GPS
+    TE-->>TE: Read cached route segments
+    TE-->>TE: Load rider baselines
+    TE->>G1B: Tool results JSON + original query
+    deactivate TE
+
+    activate G1B
+    Note right of G1B: Synthesize:<br/>pace vs baseline,<br/>remaining difficulty,<br/>actionable advice
+    G1B->>U: "Next 5km mostly downhill 🎉<br/>Your pace dropped 18% — rest stop<br/>with café in 2.3km at km marker 34."
+    deactivate G1B
+
+    Note over U,REM: Scenario B — Remote re-planning (online + reroute)
+
+    U->>FG: "Too windy, find a more sheltered route"
+    activate FG
+    FG-->>TE: get_ride_status() + get_weather_forecast()<br/>+ get_route_alternatives(constraint="sheltered")<br/>+ get_rider_profile()
+    deactivate FG
+
+    activate TE
+    Note right of TE: Local tools execute<br/>Route alternatives needs network
+    TE->>API: Request alternatives<br/>(origin, dest, constraints)
+    API-->>TE: 2-3 route options with<br/>elevation + distance + surface
+    TE->>REM: All tool results JSON + original query
+    deactivate TE
+
+    activate REM
+    Note right of REM: Compare routes<br/>considering wind,<br/>fatigue, time,<br/>rider capability
+    REM->>U: "Route B adds 3km but stays<br/>in the valley — 15km/h less headwind.<br/>You'd arrive ~20min later.<br/>Route C is shorter but has a 200m climb."
+    deactivate REM
+
+    Note over U,REM: Scenario C — Graceful offline fallback
+
+    U->>FG: "Find me a different route to avoid the rain"
+    activate FG
+    FG-->>TE: get_ride_status() + get_weather_forecast()<br/>+ get_route_alternatives(constraint="avoid_rain")<br/>+ get_segment_ahead()
+    deactivate FG
+
+    activate TE
+    Note right of TE: Route API unreachable
+    TE-->>TE: get_route_alternatives →<br/>{ status: "unavailable" }
+    TE->>G1B: Tool results (partial) + original query
+    deactivate TE
+
+    activate G1B
+    Note right of G1B: Adapts to missing data:<br/>works with what's available
+    G1B->>U: "Can't reroute right now (no signal).<br/>Rain expected in ~40min. There's a<br/>shelter at km 28, 4km ahead.<br/>Current segment is exposed for 2km<br/>then enters a forested area."
+    deactivate G1B

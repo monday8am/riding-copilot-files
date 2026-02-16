@@ -1,0 +1,54 @@
+flowchart TD
+    %% Input Layer
+    INPUT([🎤 Voice / 💬 Chat Input<br/>I am tired, find me a flatter route])
+
+    %% Local Router - FunctionGemma
+    INPUT --> FG[📱 FunctionGemma 270M<br/>Intent Classification + Tool Selection]
+
+    FG --> TOOLS{Selected Tools}
+
+    %% Tool Calls - parallel execution
+    TOOLS --> T1[🚴 get_ride_status<br/>speed, distance, elevation,<br/>pace, battery]
+    TOOLS --> T2[⛰️ get_segment_ahead<br/>next N km profile,<br/>surface, difficulty]
+    TOOLS --> T3[🌤️ get_weather_forecast<br/>temp, wind, rain,<br/>along route]
+    TOOLS --> T4[📍 find_nearby_poi<br/>cafes, water, bike shops,<br/>rest areas]
+    TOOLS --> T5[🗺️ get_route_alternatives<br/>flatter/shorter/paved<br/>alternatives to destination]
+    TOOLS --> T6[👤 get_rider_profile<br/>fitness baseline, preferences,<br/>historical pace data]
+
+    %% Tool Results Collection
+    T1 --> RESULTS[📦 Tool Results JSON]
+    T2 --> RESULTS
+    T3 --> RESULTS
+    T4 --> RESULTS
+    T5 --> RESULTS
+    T6 --> RESULTS
+
+    %% Routing Decision - deterministic
+    RESULTS --> ROUTE_CHECK{Route alternatives<br/>requested AND<br/>connection available?}
+
+    %% Local Path
+    ROUTE_CHECK -->|No| GEMMA[📱 Gemma 3 1B<br/>Local Reasoning<br/>Synthesize available data<br/>into actionable advice]
+
+    %% Remote Path
+    ROUTE_CHECK -->|Yes| REMOTE[☁️ Remote LLM<br/>Route Comparison<br/>Tradeoff analysis with<br/>full context]
+
+    %% Output
+    GEMMA --> OUTPUT([🎤 Voice / 💬 Chat Output])
+    REMOTE --> OUTPUT
+
+    %% Styling
+    classDef input fill:#fce4ec,stroke:#e91e63,stroke-width:2px,color:black
+    classDef router fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:black
+    classDef tool fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:black
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:black
+    classDef local fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:black
+    classDef remote fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:black
+    classDef results fill:#eceff1,stroke:#546e7a,stroke-width:2px,color:black
+
+    class INPUT,OUTPUT input
+    class FG router
+    class T1,T2,T3,T4,T5,T6 tool
+    class TOOLS,ROUTE_CHECK decision
+    class GEMMA local
+    class REMOTE remote
+    class RESULTS results
