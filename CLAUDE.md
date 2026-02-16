@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Cycling Copilot is an ML pipeline for fine-tuning **FunctionGemma** (Google's 270M parameter on-device function-calling model) as a tool-calling router for a cycling mobile app. The model receives natural language from a cyclist mid-ride, selects exactly ONE tool to call with the correct parameter, then a separate model (Gemma 3 1B locally or a remote LLM) generates the final response.
 
-**Base model**: `google/functiongemma-270m-it` — 58% zero-shot accuracy, 85%+ after fine-tuning.
+**Base model**: `google/functiongemma-270m-it` — 58% zero-shot accuracy, 70.1% after 3-epoch fine-tuning (target: 85%).
 
 ## Architecture
 
@@ -77,7 +77,8 @@ python3 merge_and_validate.py
 
 | File | Purpose |
 |------|---------|
-| `train_functiongemma.py` | SFT training with LoRA (rank 16, alpha 32, targets q/k/v/o_proj) |
+| `train_functiongemma.py` | SFT training with LoRA (rank 16, alpha 32, max_length 1280, targets q/k/v/o_proj) |
+| `TRAINING_RESULTS.md` | Complete training run results, metrics, and analysis |
 | `evaluate_functiongemma.py` | Reports tool selection, argument, and combined accuracy per tool |
 | `validate_functiongemma_dataset.py` | Checks CSV format, JSON validity, tool coverage before training |
 | `export_litertlm.py` | Merges LoRA → builds PyTorch model → converts to `.litertlm` for Android |
@@ -122,6 +123,37 @@ USER_MESSAGE
 TOOL_CALLS_JSON
 <end_of_turn>
 ```
+
+## Training Results (February 2026)
+
+**Current Model**: https://huggingface.co/monday8am/cycling-copilot-functiongemma
+
+### Metrics (3 epochs, 942 examples)
+- **Combined Accuracy**: 70.1% (target: 85%)
+- **Tool Selection**: 78.1%
+- **Argument Accuracy**: 71.1%
+- **Training Time**: ~21 minutes on t4-small (~$0.14)
+
+### Per-Tool Performance
+| Tool | Accuracy | Examples |
+|------|----------|----------|
+| get_segment_ahead | 83.0% | 171 |
+| get_ride_status | 81.8% | 253 |
+| find_nearby_poi | 64.8% | 176 |
+| get_weather_forecast | 62.7% | 126 |
+| get_rider_profile | 58.1% | 31 |
+| get_route_alternatives | 54.1% | 185 |
+
+**LiteRT-LM Export**: https://huggingface.co/monday8am/cycling-copilot-functiongemma-litertlm
+- File: `cycling-copilot_q8_ekv1024.litertlm` (284 MB)
+- Ready for Android deployment
+
+### Critical Fix: Prompt Truncation
+The initial training used `max_length=512`, which truncated all training examples (tool schemas alone = ~825 tokens). This caused fake "100% training accuracy" but 0% eval accuracy. Fix: increased to `max_length=1280`.
+
+See `TRAINING_RESULTS.md` for complete analysis and improvement recommendations.
+
+---
 
 ## Making the SKILL Available in Claude Code
 
