@@ -19,13 +19,18 @@ Fine-tunes google/functiongemma-270m-it on a CSV dataset of
 user_message -> tool_calls mappings using SFT with LoRA.
 
 Designed to run as a HF Job via:
-  hf jobs run --flavor t4-small -- uv run train_functiongemma.py ...
+  hf jobs uv run --flavor t4-small --secrets HF_TOKEN \\
+    "https://huggingface.co/USER/REPO/resolve/main/train_functiongemma.py" \\
+    -- --dataset USER/DATASET --tools-url USER/REPO/resolve/main/tools.json \\
+    --output-repo USER/MODEL --epochs 3
 """
 
 import argparse
 import json
 import os
-import pandas as pd
+import urllib.request
+
+import trackio
 import torch
 from datasets import Dataset, load_dataset
 from huggingface_hub import login
@@ -37,7 +42,8 @@ from trl import SFTTrainer, SFTConfig
 def parse_args():
     parser = argparse.ArgumentParser(description="Fine-tune FunctionGemma")
     parser.add_argument("--dataset", required=True, help="HF dataset repo (CSV format)")
-    parser.add_argument("--tools", required=True, help="Path to tool schemas JSON file")
+    parser.add_argument("--tools", default=None, help="Local path to tool schemas JSON file")
+    parser.add_argument("--tools-url", default=None, help="URL to tool schemas JSON file (for HF Jobs)")
     parser.add_argument("--output-repo", required=True, help="HF repo for fine-tuned model")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--lr", type=float, default=2e-4)
@@ -48,13 +54,22 @@ def parse_args():
     parser.add_argument("--test-split", type=float, default=0.1)
     parser.add_argument("--max-examples", type=int, default=None, help="Limit examples for test runs")
     parser.add_argument("--trackio-project", type=str, default=None)
+    parser.add_argument("--trackio-run-name", type=str, default=None)
+    parser.add_argument("--trackio-space-id", type=str, default=None, help="HF Space for Trackio dashboard")
     return parser.parse_args()
 
 
-def load_tools(tools_path: str) -> str:
-    """Load tool schemas and return as formatted JSON string."""
-    with open(tools_path, "r") as f:
-        tools = json.load(f)
+def load_tools(tools_path: str = None, tools_url: str = None) -> str:
+    """Load tool schemas from local path or URL, return as formatted JSON string."""
+    if tools_path:
+        with open(tools_path, "r") as f:
+            tools = json.load(f)
+    elif tools_url:
+        print(f"Fetching tool schemas from {tools_url}...")
+        with urllib.request.urlopen(tools_url) as resp:
+            tools = json.loads(resp.read().decode())
+    else:
+        raise ValueError("Either --tools (local path) or --tools-url (URL) is required")
     return json.dumps(tools, indent=2)
 
 
@@ -109,8 +124,8 @@ def main():
         login(token=hf_token)
 
     # Load tools
-    tools_json = load_tools(args.tools)
-    print(f"Loaded tool schemas from {args.tools}")
+    tools_json = load_tools(args.tools, args.tools_url)
+    print(f"Loaded tool schemas ({len(json.loads(tools_json))} tools)")
 
     # Prepare dataset
     print(f"Loading dataset from {args.dataset}...")
@@ -144,6 +159,17 @@ def main():
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
     )
 
+    # Trackio setup
+    use_trackio = False
+    if args.trackio_project:
+        try:
+            space_id = args.trackio_space_id or "monday8am/trackio"
+            trackio.init(project=args.trackio_project, space_id=space_id)
+            use_trackio = True
+            print(f"Trackio enabled: {args.trackio_project} -> https://huggingface.co/spaces/{space_id}")
+        except Exception as e:
+            print(f"Trackio init failed ({e}), continuing without monitoring")
+
     # Training config
     training_args = SFTConfig(
         output_dir="/tmp/functiongemma-output",
@@ -160,22 +186,11 @@ def main():
         push_to_hub=True,
         hub_model_id=args.output_repo,
         hub_token=hf_token,
-        report_to="none",
+        hub_strategy="every_save",
+        report_to="trackio" if use_trackio else "none",
+        run_name=args.trackio_run_name or args.trackio_project,
         fp16=torch.cuda.is_available(),
     )
-
-    # Trackio integration
-    if args.trackio_project:
-        try:
-            import trackio
-            trackio.init(
-                project=args.trackio_project,
-                space_id="monday8am/trackio",
-            )
-            training_args.report_to = "trackio"
-            print(f"Trackio enabled: {args.trackio_project} → https://huggingface.co/spaces/monday8am/trackio")
-        except ImportError:
-            print("Trackio not available, skipping monitoring")
 
     # Train
     trainer = SFTTrainer(
@@ -189,19 +204,15 @@ def main():
     print("Starting training...")
     trainer.train()
 
-    # Finish Trackio run
-    if args.trackio_project:
-        try:
-            import trackio
-            trackio.finish()
-        except Exception:
-            pass
-
     # Save and push
     print(f"Pushing model to {args.output_repo}...")
     trainer.push_to_hub()
 
-    print("Training complete!")
+    # Finish Trackio
+    if use_trackio:
+        trackio.finish()
+
+    print(f"Training complete! Model at: https://huggingface.co/{args.output_repo}")
 
 
 if __name__ == "__main__":
