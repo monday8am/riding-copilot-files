@@ -47,7 +47,8 @@ def parse_args():
     parser.add_argument("--output-repo", required=True, help="HF repo for fine-tuned model")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument("--lora-r", type=int, default=16)
     parser.add_argument("--lora-alpha", type=int, default=32)
@@ -142,7 +143,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
         device_map="auto",
     )
 
@@ -176,6 +177,7 @@ def main():
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         learning_rate=args.lr,
         lr_scheduler_type="cosine",
         warmup_ratio=0.1,
@@ -183,6 +185,7 @@ def main():
         save_strategy="epoch",
         eval_strategy="epoch" if eval_dataset else "no",
         max_length=args.max_length,
+        gradient_checkpointing=True,
         push_to_hub=True,
         hub_model_id=args.output_repo,
         hub_token=hf_token,
