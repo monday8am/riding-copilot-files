@@ -148,7 +148,7 @@ def main():
                     calls = json.loads(row["tool_calls"])
                     tool_name = calls[0]["name"]
                     total_tool_counts[tool_name] += 1
-                except:
+                except Exception:
                     pass
             else:
                 duplicates += 1

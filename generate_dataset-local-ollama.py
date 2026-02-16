@@ -1,6 +1,13 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "openai",
+# ]
+# ///
 import csv
 import json
 import os
+import sys
 import time
 from dataclasses import dataclass
 from typing import List, Dict, Optional
@@ -10,7 +17,7 @@ try:
 except ImportError:
     print("Error: 'openai' library not found.")
     print("Please install it using: pip install openai")
-    exit(1)
+    sys.exit(1)
 
 # --- Configuration ---
 
@@ -97,7 +104,7 @@ class LLMGenerator:
             print(f"\nMake sure Ollama is running on {OLLAMA_HOST} with:")
             print(f"  export OLLAMA_HOST=0.0.0.0")
             print(f"  ollama serve")
-            exit(1)
+            sys.exit(1)
 
     def generate_batch(
         self, tool_name: str, query_arg: str, count: int, style: str

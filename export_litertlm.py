@@ -32,7 +32,7 @@ import os
 from pathlib import Path
 
 import torch
-from huggingface_hub import login, HfApi, upload_folder, snapshot_download
+from huggingface_hub import login, HfApi, upload_folder
 from peft import PeftModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 

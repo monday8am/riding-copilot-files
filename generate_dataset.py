@@ -1,17 +1,23 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "huggingface_hub",
+# ]
+# ///
 import csv
 import json
 import os
+import sys
 import time
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 
-# use huggingface_hub for robust inference
 try:
     from huggingface_hub import InferenceClient
 except ImportError:
     print("Error: 'huggingface_hub' library not found.")
     print("Please install it using: pip install huggingface_hub")
-    exit(1)
+    sys.exit(1)
 
 # --- Configuration ---
 
@@ -83,7 +89,7 @@ class LLMGenerator:
             print(f"Error initializing Client: {e}")
             if not api_key:
                 print("Tip: If not logged in, export HF_TOKEN or run 'huggingface-cli login'")
-            exit(1)
+            sys.exit(1)
         
     def generate_batch(self, tool_name: str, query_arg: str, count: int, 
                        style: str) -> List[str]:

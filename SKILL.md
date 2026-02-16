@@ -47,7 +47,7 @@ user_message,tool_calls
 Use the validation script to check format before spending GPU time:
 
 ```bash
-uv run scripts/validate_functiongemma_dataset.py \
+uv run validate_functiongemma_dataset.py \
   --dataset USERNAME/DATASET_NAME \
   --tools path/to/tools.json \
   --split train
@@ -125,13 +125,13 @@ hf jobs run \
   --flavor t4-small \
   --timeout 1h \
   --secrets HF_TOKEN=$HF_TOKEN \
-  -- uv run scripts/train_functiongemma.py \
+  -- uv run train_functiongemma.py \
     --dataset USERNAME/DATASET_NAME \
     --tools path/to/tools.json \
     --output-repo USERNAME/MODEL_NAME \
     --epochs 3 \
     --lr 2e-4 \
-    --batch-size 8
+    --batch-size 2
 ```
 
 ### Training Parameters
@@ -143,8 +143,8 @@ hf jobs run \
 | `--output-repo` | required | HF repo for the fine-tuned model |
 | `--epochs` | 3 | Number of training epochs |
 | `--lr` | 2e-4 | Learning rate |
-| `--batch-size` | 8 | Training batch size |
-| `--max-seq-length` | 512 | Max sequence length (512 is enough for function calling) |
+| `--batch-size` | 2 | Training batch size |
+| `--max-length` | 512 | Max sequence length (512 is enough for function calling) |
 | `--lora-r` | 16 | LoRA rank |
 | `--lora-alpha` | 32 | LoRA alpha |
 | `--test-split` | 0.1 | Fraction of data for evaluation |
@@ -159,7 +159,7 @@ hf jobs run \
   --flavor t4-small \
   --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
-  -- uv run scripts/train_functiongemma.py \
+  -- uv run train_functiongemma.py \
     --dataset USERNAME/DATASET_NAME \
     --tools path/to/tools.json \
     --output-repo USERNAME/MODEL_NAME-test \
@@ -184,7 +184,7 @@ https://huggingface.co/spaces/USERNAME/trackio
 After training, evaluate function-calling accuracy:
 
 ```bash
-uv run scripts/evaluate_functiongemma.py \
+uv run evaluate_functiongemma.py \
   --model USERNAME/MODEL_NAME \
   --dataset USERNAME/DATASET_NAME \
   --tools path/to/tools.json \
@@ -215,7 +215,7 @@ hf jobs run \
   --flavor t4-small \
   --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
-  -- uv run scripts/export_litertlm.py \
+  -- uv run export_litertlm.py \
     --model USERNAME/MODEL_NAME \
     --output-repo USERNAME/MODEL_NAME-litertlm \
     --output-name-prefix cycling-copilot
@@ -238,14 +238,14 @@ The exported model can be loaded with the LiteRT-LM Android SDK or deployed via 
 
 ```bash
 # 1. Validate dataset
-uv run scripts/validate_functiongemma_dataset.py \
+uv run validate_functiongemma_dataset.py \
   --dataset monday8am/cycling-copilot-dataset \
   --tools tools.json
 
 # 2. Quick test run
 hf jobs run --flavor t4-small --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
-  -- uv run scripts/train_functiongemma.py \
+  -- uv run train_functiongemma.py \
     --dataset monday8am/cycling-copilot-dataset \
     --tools tools.json \
     --output-repo monday8am/cycling-copilot-functiongemma-test \
@@ -254,14 +254,14 @@ hf jobs run --flavor t4-small --timeout 30m \
 # 3. Full training
 hf jobs run --flavor t4-small --timeout 1h \
   --secrets HF_TOKEN=$HF_TOKEN \
-  -- uv run scripts/train_functiongemma.py \
+  -- uv run train_functiongemma.py \
     --dataset monday8am/cycling-copilot-dataset \
     --tools tools.json \
     --output-repo monday8am/cycling-copilot-functiongemma \
     --epochs 3
 
 # 4. Evaluate
-uv run scripts/evaluate_functiongemma.py \
+uv run evaluate_functiongemma.py \
   --model monday8am/cycling-copilot-functiongemma \
   --dataset monday8am/cycling-copilot-dataset \
   --tools tools.json
@@ -269,7 +269,7 @@ uv run scripts/evaluate_functiongemma.py \
 # 5. Export for Android
 hf jobs run --flavor t4-small --timeout 30m \
   --secrets HF_TOKEN=$HF_TOKEN \
-  -- uv run scripts/export_litertlm.py \
+  -- uv run export_litertlm.py \
     --model monday8am/cycling-copilot-functiongemma \
     --output-repo monday8am/cycling-copilot-functiongemma-litertlm \
     --output-name-prefix cycling-copilot

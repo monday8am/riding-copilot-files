@@ -21,6 +21,7 @@ import json
 import os
 import torch
 from datasets import load_dataset
+from peft import AutoPeftModelForCausalLM
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from huggingface_hub import login
 
@@ -85,14 +86,23 @@ def main():
     if args.max_examples:
         ds = ds.select(range(min(args.max_examples, len(ds))))
 
-    # Load model
+    # Load model (supports both LoRA adapters and full models)
     print(f"Loading model {args.model}...")
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        torch_dtype=torch.float32,
-        device_map="auto",
-    )
+    try:
+        model = AutoPeftModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=torch.float32,
+            device_map="auto",
+        )
+        print("  Loaded as PEFT/LoRA model")
+    except Exception:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=torch.float32,
+            device_map="auto",
+        )
+        print("  Loaded as full model")
     model.eval()
 
     # Evaluate
@@ -127,7 +137,6 @@ def main():
                 **inputs,
                 max_new_tokens=128,
                 do_sample=False,
-                temperature=1.0,
             )
 
         generated = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=False)
@@ -158,6 +167,11 @@ def main():
     print("EVALUATION REPORT")
     print(f"{'='*50}")
     print(f"Total examples: {total}")
+
+    if total == 0:
+        print("No examples to evaluate.")
+        return
+
     print(f"Parse failures: {results['parse_failures']}")
     print(f"")
     print(f"Tool selection accuracy: {results['tool_correct']}/{total} ({results['tool_correct']/total*100:.1f}%)")
@@ -169,7 +183,7 @@ def main():
         acc = stats["correct"] / stats["total"] * 100 if stats["total"] > 0 else 0
         print(f"  {tool:30s} {stats['correct']:3d}/{stats['total']:3d} ({acc:5.1f}%)")
 
-    target_met = results["combined_correct"] / total >= 0.85 if total > 0 else False
+    target_met = results["combined_correct"] / total >= 0.85
     print(f"\nTarget (85%): {'MET' if target_met else 'NOT MET'}")
 
 
