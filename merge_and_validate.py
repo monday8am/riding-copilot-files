@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# ///
 """
 Merge and validate all cycling copilot CSV datasets.
 """

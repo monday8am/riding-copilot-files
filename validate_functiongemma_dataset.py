@@ -2,7 +2,6 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #   "datasets",
-#   "pandas",
 # ]
 # ///
 """
@@ -117,6 +116,9 @@ def main():
         pct = count / len(ds) * 100 if len(ds) > 0 else 0
         bar = "#" * int(pct / 2)
         print(f"  {name:30s} {count:4d} ({pct:5.1f}%) {bar}")
+
+    if unknown_tools:
+        print(f"\nUnknown tools found: {', '.join(sorted(unknown_tools))}")
 
     # Warnings
     low_count_tools = [n for n, c in tool_counts.items() if c < 30]

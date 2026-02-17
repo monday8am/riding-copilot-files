@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "google-genai",
+# ]
+# ///
 import os
 import sys
 from google import genai

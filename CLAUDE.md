@@ -69,7 +69,7 @@ uv run generate_dataset.py
 uv run generate_dataset-local-ollama.py
 
 # Merge and validate datasets
-python3 merge_and_validate.py
+uv run merge_and_validate.py
 ```
 
 ## Key Files
@@ -77,16 +77,19 @@ python3 merge_and_validate.py
 | File | Purpose |
 |------|---------|
 | `train_functiongemma.py` | SFT training with LoRA (rank 16, alpha 32, max_length 1280, targets q/k/v/o_proj) |
-| `TRAINING_RESULTS.md` | Complete training run results, metrics, and analysis |
 | `evaluate_functiongemma.py` | Reports tool selection, argument, and combined accuracy per tool |
 | `validate_functiongemma_dataset.py` | Checks CSV format, JSON validity, tool coverage before training |
 | `export_litertlm.py` | Merges LoRA → builds PyTorch model → converts to `.litertlm` for Android |
 | `generate_dataset.py` | Expands seed examples via HF Inference API (Llama 3 8B) |
 | `generate_dataset-local-ollama.py` | Same expansion via local Ollama (qwen2.5:7b) |
+| `merge_and_validate.py` | Merges multiple CSV datasets, deduplicates, validates |
+| `upload_to_hf.py` | Uploads merged dataset CSV to HF Hub |
+| `trackio_app.py` | Launches Trackio dashboard for training monitoring |
 | `cycling-copilot-tools.json` | OpenAI-compatible tool schema definitions (6 tools) |
 | `cycling-copilot-seeds.csv` | 25 seed examples for dataset expansion |
 | `dataset-expansion-prompt.md` | Prompt template for generating training data variations |
 | `SKILL.md` | Full FunctionGemma trainer skill documentation |
+| `TRAINING_RESULTS.md` | Complete training run results, metrics, and analysis |
 
 ## Dataset
 

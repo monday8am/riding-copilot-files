@@ -6,7 +6,6 @@
 #   "datasets",
 #   "peft",
 #   "huggingface_hub",
-#   "pandas",
 # ]
 # ///
 """

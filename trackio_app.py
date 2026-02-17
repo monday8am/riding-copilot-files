@@ -1,4 +1,9 @@
-import gradio as gr
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "trackio",
+# ]
+# ///
 import trackio
 
 # Initialize Trackio dashboard

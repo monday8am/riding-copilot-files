@@ -6,10 +6,8 @@
 #   "trl>=0.25.0",
 #   "datasets",
 #   "peft",
-#   "bitsandbytes",
 #   "huggingface_hub",
 #   "trackio",
-#   "pandas",
 # ]
 # ///
 """
@@ -32,7 +30,7 @@ import urllib.request
 
 import trackio
 import torch
-from datasets import Dataset, load_dataset
+from datasets import load_dataset
 from huggingface_hub import login
 from peft import LoraConfig
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -99,21 +97,19 @@ def prepare_dataset(dataset_repo: str, tools_json: str, test_split: float, max_e
     if max_examples:
         ds = ds.select(range(min(max_examples, len(ds))))
 
-    formatted = []
-    for row in ds:
-        text = format_functiongemma_prompt(
+    ds = ds.map(
+        lambda row: {"text": format_functiongemma_prompt(
             user_message=row["user_message"],
             tool_calls=row["tool_calls"],
             tools_json=tools_json,
-        )
-        formatted.append({"text": text})
-
-    dataset = Dataset.from_list(formatted)
+        )},
+        remove_columns=ds.column_names,
+    )
 
     if test_split > 0:
-        split = dataset.train_test_split(test_size=test_split, seed=42)
+        split = ds.train_test_split(test_size=test_split, seed=42)
         return split["train"], split["test"]
-    return dataset, None
+    return ds, None
 
 
 def main():

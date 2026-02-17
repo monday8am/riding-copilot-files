@@ -94,19 +94,17 @@ class LLMGenerator:
     def generate_batch(self, tool_name: str, query_arg: str, count: int, 
                        style: str) -> List[str]:
         
-        prompt = f"""
-        {TOOLS_CONTEXT}
-        
-        TASK: Generate {count} unique, natural language user messages that would trigger the following tool call:
-        Tool: {tool_name}
-        Argument: query="{query_arg}"
-        
-        STYLE: {style}
-        
-        OUTPUT FORMAT:
-        Return ONLY a raw JSON array of strings. No markdown formatting. Do not include "Here is the JSON" or other chatter.
-        Example: ["message 1", "message 2", ...]
-        """
+        prompt = f"""{TOOLS_CONTEXT}
+
+TASK: Generate {count} unique, natural language user messages that would trigger the following tool call:
+Tool: {tool_name}
+Argument: query="{query_arg}"
+
+STYLE: {style}
+
+OUTPUT FORMAT:
+Return ONLY a raw JSON array of strings. No markdown formatting. Do not include "Here is the JSON" or other chatter.
+Example: ["message 1", "message 2", ...]"""
         
         max_retries = 3
         for attempt in range(max_retries):
@@ -118,7 +116,6 @@ class LLMGenerator:
                         {"role": "user", "content": prompt}
                     ],
                     max_tokens=500,
-                    stream=False
                 )
                 
                 if not response.choices:
