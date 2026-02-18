@@ -88,7 +88,7 @@ uv run merge_and_validate.py
 | `cycling-copilot-tools.json` | OpenAI-compatible tool schema definitions (6 tools) |
 | `cycling-copilot-seeds.csv` | 25 seed examples for dataset expansion |
 | `dataset-expansion-prompt.md` | Prompt template for generating training data variations |
-| `skills/functiongemma-trainer/SKILL.md` | Full FunctionGemma trainer skill documentation (plugin canonical location) |
+| `SKILL.md` | Full FunctionGemma trainer skill documentation (canonical copy at [monday8am/skills](https://github.com/monday8am/skills)) |
 | `TRAINING_RESULTS.md` | Complete training run results, metrics, and analysis |
 
 ## Dataset
@@ -158,39 +158,27 @@ See `TRAINING_RESULTS.md` for complete analysis and improvement recommendations.
 
 ---
 
-## Installing as a Claude Code Plugin
+## Claude Code Skill
 
-The skill is packaged as a Claude Code plugin in `.claude-plugin/` and `skills/functiongemma-trainer/`.
+The FunctionGemma trainer skill is published in a separate repo: **[monday8am/skills](https://github.com/monday8am/skills)**
 
-### For other users
+### Install via Claude Code
 
-```bash
-# Install via the plugin marketplace
-/plugin marketplace add monday8am/riding-copilot-files
-/plugin install functiongemma-trainer@monday8am/riding-copilot-files
+```
+/plugin marketplace add monday8am/skills
+/plugin install functiongemma-trainer@monday8am/skills
 ```
 
-### Manual / local installation
+### Manual install
 
 ```bash
-# Clone the repo and copy the skill to your personal skills directory
-git clone https://github.com/monday8am/riding-copilot-files.git
-cp -r riding-copilot-files/skills/functiongemma-trainer ~/.claude/skills/
+git clone https://github.com/monday8am/skills.git
+cp -r skills/skills/functiongemma-trainer ~/.claude/skills/
 ```
 
 ### HuggingFace Space
 
-A public landing page with documentation and links is available at:
-https://huggingface.co/spaces/monday8am/functiongemma-trainer
-
-### Skill Invocation
-
-Once installed, invoke the skill in Claude Code:
-```
-/functiongemma-trainer <args>
-```
-
-Refer to `skills/functiongemma-trainer/SKILL.md` for complete documentation.
+Documentation landing page: https://huggingface.co/spaces/monday8am/functiongemma-trainer
 
 ## Environment Variables
 
@@ -199,6 +187,8 @@ Refer to `skills/functiongemma-trainer/SKILL.md` for complete documentation.
 
 ## Repository Structure
 
-- **GitHub**: https://github.com/monday8am/riding-copilot-files
+- **GitHub (project)**: https://github.com/monday8am/riding-copilot-files
+- **GitHub (skills)**: https://github.com/monday8am/skills
 - **HF Dataset**: https://huggingface.co/datasets/monday8am/cycling-copilot
+- **HF Space**: https://huggingface.co/spaces/monday8am/functiongemma-trainer
 - **Model output**: `monday8am/cycling-copilot-functiongemma` (includes both LoRA adapter and .litertlm export)
