@@ -1,0 +1,15 @@
+{
+  "name": "functiongemma-trainer",
+  "owner": { "name": "monday8am" },
+  "metadata": {
+    "description": "Fine-tune FunctionGemma for on-device function calling with SFT on HF Jobs",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "functiongemma-trainer",
+      "source": "./skills/functiongemma-trainer",
+      "skills": "./"
+    }
+  ]
+}

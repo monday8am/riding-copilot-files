@@ -88,7 +88,7 @@ uv run merge_and_validate.py
 | `cycling-copilot-tools.json` | OpenAI-compatible tool schema definitions (6 tools) |
 | `cycling-copilot-seeds.csv` | 25 seed examples for dataset expansion |
 | `dataset-expansion-prompt.md` | Prompt template for generating training data variations |
-| `SKILL.md` | Full FunctionGemma trainer skill documentation |
+| `skills/functiongemma-trainer/SKILL.md` | Full FunctionGemma trainer skill documentation (plugin canonical location) |
 | `TRAINING_RESULTS.md` | Complete training run results, metrics, and analysis |
 
 ## Dataset
@@ -158,70 +158,39 @@ See `TRAINING_RESULTS.md` for complete analysis and improvement recommendations.
 
 ---
 
-## Making the SKILL Available in Claude Code
+## Installing as a Claude Code Plugin
 
-The `SKILL.md` file defines a Claude Code skill for training FunctionGemma. To make it available to Claude Code users:
+The skill is packaged as a Claude Code plugin in `.claude-plugin/` and `skills/functiongemma-trainer/`.
 
-### Option 1: HuggingFace Skills Collection (Recommended)
-
-1. **Create a HuggingFace Space or Model repo** with the skill files:
-   - Navigate to https://huggingface.co/new-space or https://huggingface.co/new
-   - Choose "Skills" or "Model" type
-   - Upload `SKILL.md` and all referenced scripts
-
-2. **Structure for HF Skills**:
-   ```
-   monday8am/functiongemma-trainer/
-   ├── README.md                   # Overview and usage
-   ├── SKILL.md                    # Skill metadata (frontmatter + docs)
-   ├── train_functiongemma.py
-   ├── evaluate_functiongemma.py
-   ├── validate_functiongemma_dataset.py
-   ├── export_litertlm.py
-   ├── generate_dataset.py
-   ├── generate_dataset-local-ollama.py
-   └── cycling-copilot-tools.json
-   ```
-
-3. **Users can install via Claude Code Settings**:
-   - In Claude Code, go to Skills settings
-   - Add skill from HuggingFace: `monday8am/functiongemma-trainer`
-   - Or add via command: `/skill add monday8am/functiongemma-trainer`
-
-### Option 2: Local Skill Installation
-
-Users can install directly from the GitHub repository:
+### For other users
 
 ```bash
-# In Claude Code
-/skill add https://github.com/monday8am/riding-copilot-files
+# Install via the plugin marketplace
+/plugin marketplace add monday8am/riding-copilot-files
+/plugin install functiongemma-trainer@monday8am/riding-copilot-files
 ```
 
-Or manually copy to Claude Code skills directory:
+### Manual / local installation
+
 ```bash
-# Clone the repo
+# Clone the repo and copy the skill to your personal skills directory
 git clone https://github.com/monday8am/riding-copilot-files.git
-
-# Copy to Claude Code skills directory
-cp -r riding-copilot-files ~/.claude/skills/functiongemma-trainer
+cp -r riding-copilot-files/skills/functiongemma-trainer ~/.claude/skills/
 ```
+
+### HuggingFace Space
+
+A public landing page with documentation and links is available at:
+https://huggingface.co/spaces/monday8am/functiongemma-trainer
 
 ### Skill Invocation
 
-Once installed, users invoke the skill in Claude Code:
+Once installed, invoke the skill in Claude Code:
 ```
 /functiongemma-trainer <args>
 ```
 
-The skill name is defined in the `SKILL.md` frontmatter:
-```yaml
----
-name: functiongemma-trainer
-description: Fine-tune FunctionGemma for on-device function calling using SFT on Hugging Face Jobs...
----
-```
-
-Refer to `SKILL.md` for complete documentation on skill usage and parameters.
+Refer to `skills/functiongemma-trainer/SKILL.md` for complete documentation.
 
 ## Environment Variables
 
