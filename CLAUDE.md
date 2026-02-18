@@ -88,7 +88,6 @@ uv run merge_and_validate.py
 | `cycling-copilot-tools.json` | OpenAI-compatible tool schema definitions (6 tools) |
 | `cycling-copilot-seeds.csv` | 25 seed examples for dataset expansion |
 | `dataset-expansion-prompt.md` | Prompt template for generating training data variations |
-| `SKILL.md` | Full FunctionGemma trainer skill documentation (canonical copy at [monday8am/skills](https://github.com/monday8am/skills)) |
 | `TRAINING_RESULTS.md` | Complete training run results, metrics, and analysis |
 
 ## Dataset
@@ -162,18 +161,23 @@ See `TRAINING_RESULTS.md` for complete analysis and improvement recommendations.
 
 The FunctionGemma trainer skill is published in a separate repo: **[monday8am/skills](https://github.com/monday8am/skills)**
 
+This repo is the **development** source — scripts are iterated and tested here with real data. When stable, updated scripts are copied to the skills repo for distribution.
+
+### Publishing workflow
+
+```bash
+# After testing script changes in this repo, copy to skills repo:
+cp train_functiongemma.py evaluate_functiongemma.py validate_functiongemma_dataset.py export_litertlm.py \
+  /path/to/skills/skills/functiongemma-trainer/scripts/
+cp cycling-copilot-tools.json /path/to/skills/skills/functiongemma-trainer/references/
+# Then commit and push the skills repo
+```
+
 ### Install via Claude Code
 
 ```
 /plugin marketplace add monday8am/skills
 /plugin install functiongemma-trainer@monday8am/skills
-```
-
-### Manual install
-
-```bash
-git clone https://github.com/monday8am/skills.git
-cp -r skills/skills/functiongemma-trainer ~/.claude/skills/
 ```
 
 ### HuggingFace Space
@@ -187,8 +191,8 @@ Documentation landing page: https://huggingface.co/spaces/monday8am/functiongemm
 
 ## Repository Structure
 
-- **GitHub (project)**: https://github.com/monday8am/riding-copilot-files
-- **GitHub (skills)**: https://github.com/monday8am/skills
+- **GitHub (project)**: https://github.com/monday8am/riding-copilot-files — development, training data, results
+- **GitHub (skills)**: https://github.com/monday8am/skills — published skills for Claude Code / Codex / Gemini CLI
 - **HF Dataset**: https://huggingface.co/datasets/monday8am/cycling-copilot
 - **HF Space**: https://huggingface.co/spaces/monday8am/functiongemma-trainer
 - **Model output**: `monday8am/cycling-copilot-functiongemma` (includes both LoRA adapter and .litertlm export)
