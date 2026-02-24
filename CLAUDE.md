@@ -76,7 +76,7 @@ uv run merge_and_validate.py
 
 | File | Purpose |
 |------|---------|
-| `train_functiongemma.py` | SFT training with LoRA (rank 16, alpha 32, max_length 1280, targets q/k/v/o_proj) |
+| `train_functiongemma.py` | SFT training with LoRA via **Unsloth** (~2x faster, ~60% less VRAM; rank 16, alpha 32, max_length 1280, targets q/k/v/o_proj) |
 | `evaluate_functiongemma.py` | Reports tool selection, argument, and combined accuracy per tool |
 | `validate_functiongemma_dataset.py` | Checks CSV format, JSON validity, tool coverage before training |
 | `export_litertlm.py` | Merges LoRA → builds PyTorch model → converts to `.litertlm` for Android |
@@ -133,7 +133,7 @@ TOOL_CALLS_JSON
 - **Combined Accuracy**: 70.1% (target: 85%)
 - **Tool Selection**: 78.1%
 - **Argument Accuracy**: 71.1%
-- **Training Time**: ~21 minutes on t4-small (~$0.14)
+- **Training Time**: ~21 minutes on t4-small (~$0.14) — with Unsloth: **~10 minutes (~$0.07)**
 
 ### Per-Tool Performance
 | Tool | Accuracy | Examples |
@@ -165,13 +165,20 @@ This repo is the **development** source — scripts are iterated and tested here
 
 ### Publishing workflow
 
-```bash
-# After testing script changes in this repo, copy to skills repo:
-cp train_functiongemma.py evaluate_functiongemma.py validate_functiongemma_dataset.py export_litertlm.py \
-  /path/to/skills/skills/functiongemma-trainer/scripts/
-cp cycling-copilot-tools.json /path/to/skills/skills/functiongemma-trainer/references/
-# Then commit and push the skills repo
+Use the local `/sync-to-skills` skill — it handles everything automatically:
+
 ```
+/sync-to-skills [optional commit message]
+```
+
+This will:
+1. Commit any uncommitted changes in this repo
+2. Copy the five syncable files to `~/Projects/skills/skills/functiongemma-trainer/`
+3. Commit and push the skills repo via SSH
+
+**Syncable files**: `train_functiongemma.py`, `evaluate_functiongemma.py`, `validate_functiongemma_dataset.py`, `export_litertlm.py`, `cycling-copilot-tools.json`
+
+The skill is defined at `.claude/commands/sync-to-skills.md`. The skills repo is expected at `~/Projects/skills` (SSH remote: `git@github.com:monday8am/skills.git`).
 
 ### Install via Claude Code
 
